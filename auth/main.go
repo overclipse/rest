@@ -2,9 +2,8 @@ package main
 
 import (
 	"auth/internal/config"
+	"auth/internal/server"
 	"fmt"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -21,4 +20,16 @@ func main() {
 	fmt.Printf("Database Timeout: %d seconds\n", cfg.DBTimeout)
 	fmt.Printf("JWT Secret Key: %s\n", cfg.JWTSecretKey)
 	fmt.Printf("=============================\n")
+	
+	server, err := server.NewServer(cfg)
+	if err != nil {
+		fmt.Printf("Ошибка при создании сервера %v\n", err)
+		return
+	}
+	fmt.Printf("Сервер успешно создан\n")
+	if err := server.Serve(); err != nil {
+		fmt.Printf("Ошибка запуска сервера %v\n", err)
+		return
+	}
+	fmt.Printf("Сервер запущен успешно\n")
 }
