@@ -1,6 +1,8 @@
 package service
 
 import (
+	"auth/internal/config"
+	"auth/internal/database"
 	"auth/internal/models"
 	"context"
 
@@ -22,8 +24,14 @@ var _ Service = (*DBService)(nil)
 // Он принимает конфигурацию и возвращает указатель на текущею реализацию
 // сервиса или ошибку, если она произошла
 
-func NewService(db *gorm.DB) Service {
-	return &DBService{db: db}
+func NewService(cfg *config.Config) (Service, error) {
+	db, err := database.NewDatabase(cfg, &models.User{})
+	if err != nil {
+		return nil, err
+	}
+	return &DBService{
+		db: db,
+	}, nil
 }
 
 // Create создает нового пользователя в базе данных
