@@ -23,13 +23,12 @@ func NewDatabase(cfg *config.Config, models ...any) (*gorm.DB, error) {
 	// Добавляем задержку в 1 секунду, // чтобы дать время на инициализацию других компонентов, если это необходимо
 	// Это может быть полезно, если база данных запускается в контейнере или сервисе, который требует времени на инициализацию
 	// Например, если база данных запускается в Docker-контейнере, то может потребоваться время на его запуск и готовность к соединению
-	time.Sleep(1 * time.Second)
-
-	// Применяем контекст к подключению к БД
-	db, err := gorm.Open(postgres.Open(cfg.DBDSN), &gorm.Config{})
+	//time.Sleep(1 * time.Second) как было 
+	db, err := openDBWithRetry(ctx, cfg.DBDSN)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", "ошибка подключения к базе данных", err)
+		return nil, fmt.Errorf("ошибка подключения к базе данных")
 	}
+	//тут мы проверяем реальную работу сокета как что он работает или нет
 
 	errMigration := runMigrations(db, models...) // Выполняем миграции
 	if errMigration != nil {
@@ -50,4 +49,22 @@ func runMigrations(db *gorm.DB, models ...any) error {
 	// Если все миграции прошли успешно, возвращаем nil
 	fmt.Println("Все миграции успешно выполнены")
 	return nil
+}
+
+func openDBWithRetry(ctx context.Context, dsn string) (*gorm.DB, error) {
+	backoff := 100 * time.Millisecond
+	for {
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			return db, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("gorm.Open: не успели до дедлайна: %w", err)
+		case <-time.After(backoff):
+			if backoff < 2*time.Second {
+				backoff *= 2
+			}
+		}
+	}
 }
