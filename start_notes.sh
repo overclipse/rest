@@ -1,0 +1,20 @@
+#!/bin/bash
+
+cd notes && \
+ PORT=8103 \
+ HOST=localhost \
+ SERVER_TIMEOUT=10 \
+ MONGO_TIMEOUT=10 \
+ DB_TIMEOUT=5 \
+ MONGO_INITDB_HOST=localhost \
+ MONGO_INITDB_PORT=27017 \
+ MONGO_INITDB_ROOT_USERNAME=mongo \
+ MONGO_INITDB_ROOT_PASSWORD=mongo \
+ MONGO_INITDB_DATABASE=notes_db \
+ MONGO_USE_SSL=disable \
+ JWT_SECRET_KEY=secret_key \
+ REDIS_HOST=localhost \
+ REDIS_PORT=6379 \
+ REDIS_PASSWORD=redis \
+ DB_COLLECTION=notes \
+ go run main.go

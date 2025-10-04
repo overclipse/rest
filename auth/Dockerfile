@@ -1,41 +1,28 @@
-# Используем официальный образ Go как базовый
-FROM golang:1.24-alpine AS builder
+# Используем Go 1.25
+FROM golang:1.25-alpine AS builder
 
-# Устанавливаем рабочую директорию внутри контейнера
 WORKDIR /app
 
-# Копируем go mod файлы auth сервиса
+# Кладём только mod/sum для кеша зависимостей
 COPY auth/go.mod auth/go.sum ./auth/
 
-# Копируем pkg директорию для локального модуля
+# Если в go.mod есть replace на локальный jwtmanager — нужен каталог
+#   replace jwt_manager => ../pkg/jwtmanager
 COPY pkg ./pkg
 
-# Переходим в папку auth
 WORKDIR /app/auth
-
-# Загружаем зависимости
 RUN go mod download
 
-# Копируем исходный код auth сервиса
+# Копируем исходники
 COPY auth/ .
 
-# Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+# Собираем
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/auth .
 
-# Финальный этап - минимальный образ
+# Рантайм
 FROM alpine:latest
-
-# Устанавливаем ca-certificates для HTTPS
 RUN apk --no-cache add ca-certificates
-
-# Создаем рабочую директорию
-WORKDIR /root/
-
-# Копируем исполняемый файл из builder этапа
-COPY --from=builder /app/auth/main .
-
-# Открываем порт
+WORKDIR /root
+COPY --from=builder /app/bin/auth ./auth
 EXPOSE 8101
-
-# Запускаем приложение
-CMD ["./main"]
+CMD ["./auth"]
