@@ -1,20 +1,30 @@
 package handler
 
 import (
-	"notes/internal/config"
-
 	"github.com/gin-gonic/gin"
+	jwtmanager "jwt_manager"
+	"notes/internal/config"
 )
 
-// Handler содержит все обработчики для работы с пользователями
+// Handler содержит все обработчики для работы с заметками
 type Handler struct {
-	cfg *config.Config // Конфигурация сервера
+	cfg        *config.Config         // Конфигурация приложения
+	jwtManager *jwtmanager.JWTManager // JWT менеджер для работы с токенами
 }
 
-// NewHandler создает новый экземпляр обработчика пользователей
+// NewHandler создает новый экземпляр обработчика заметок
 func NewHandler(cfg *config.Config) *Handler {
+	// Создаем JWT менеджер
+	jwtConfig := jwtmanager.JWTConfig{
+		SecretKey:              cfg.JWTSecretKey,
+		AccessTokenExpiration:  24,  // 24 часа по умолчанию
+		RefreshTokenExpiration: 168, // 7 дней по умолчанию
+	}
+	jwtManager := jwtmanager.NewJWTManager(jwtConfig)
+
 	return &Handler{
-		cfg: cfg, // Сохраняем конфигурацию в обработчике
+		cfg:        cfg,
+		jwtManager: jwtManager,
 	}
 }
 
@@ -56,4 +66,9 @@ func (h *Handler) GetAllNotes(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "Получение всех заметок не реализовано",
 	})
+}
+
+// GetJWTMiddleware возвращает JWT middleware для использования в роутах
+func (h *Handler) GetJWTMiddleware() gin.HandlerFunc {
+	return h.jwtManager.JWTInterceptor()
 }
