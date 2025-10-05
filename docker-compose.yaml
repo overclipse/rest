@@ -97,6 +97,30 @@ services:
     restart: always
     networks:
       - notes_net
+  
+  redis_notes:
+    # Название контейнера
+    container_name: redis_notes
+     # Образ для контейнера который будет скачан из DockerHub
+    image: redis:7.2.4
+    # Команда для запуска Redis с паролем
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    # Порты, которые будут использоваться в контейнере
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    environment:
+      # Переменные окружения для Redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    # Настройки хранилища данных, необходим для сохранения
+    # данных в базе данных при остановке контейнера
+    volumes:
+      - redis_vol:/data
+    # Объявляем внутренную сеть докера, для 
+    # передачи данных между контейнерами
+    networks:
+      - notes_net
+    depends_on:
+      - db_notes
 
 
 
@@ -113,4 +137,6 @@ volumes:
   db_notes_vol:
     driver: local
   mongo-express_vol:
+    driver: local
+  redis_vol:
     driver: local

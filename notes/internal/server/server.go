@@ -6,6 +6,7 @@ import (
 	"notes/internal/config"
 	"notes/internal/handler"
 	"notes/internal/routes"
+	"notes/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,21 +25,24 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("конфигурация сервера не может быть nil")
 	}
+	service, err := service.NewService(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось создать сервис: %w", err)
+	}
 	// Создаем новый экземпляр обработчика
-	handler := handler.NewHandler(cfg)
+	handler := handler.NewHandler(cfg, service)
 	// Проверяем, что обработчик успешно создан
 	if handler == nil {
 		return nil, fmt.Errorf("не удалось создать обработчик сервера")
 	}
 	fmt.Println("Обработчик сервера успешно создан")
 	// Создаем новый экземпляр маршрутизатора
-	router := routes.SetupRouter(handler) // Новое
+	router := routes.SetupRouter(handler)
 	// Создаем новый экземпляр сервера
 	return &Server{
-		router: router, // Новое
+		router: router,
 		cfg:    cfg,
 	}, nil
-
 }
 
 // Start - запуск сервера
